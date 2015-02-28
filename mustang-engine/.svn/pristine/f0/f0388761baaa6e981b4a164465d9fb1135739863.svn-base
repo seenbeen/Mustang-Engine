@@ -1,0 +1,5 @@
+import xml.etree.ElementTree as ET
+
+tree = ET.parse("C:/Users/Simon/Dropbox/Computer Programming/Projects/mustang-cannon/m_cannon/Assets/menu_config.xml")
+
+print(tree)

@@ -1,0 +1,7 @@
+class GameEvent():
+    def __init__(self,function,parameters):
+        self.function = function
+        self.parameters = parameters
+
+    def do(self):
+        self.function(*self.parameters);

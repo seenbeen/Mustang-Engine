@@ -1,0 +1,5 @@
+[sprite]
+numImages = 1
+offX = 35
+offY = 35
+delay = 2

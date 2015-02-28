@@ -1,0 +1,21 @@
+from m_engine import engine
+from m_engine.event import *
+from m_engine.sprite import *
+from controls import *
+
+class TestTrigger(SpriteTrigger):
+    def __init__(self):
+        SpriteTrigger.__init__(self,0)
+
+    def triggered(self,sprite):
+        print ("TRIGGERED!",sprite.frame)
+        
+class FireTrigger(SpriteTrigger):
+    def __init__(self):
+        SpriteTrigger.__init__(self,4)
+
+    def triggered(self,sprite):
+        print ("FIRE!",sprite.frame)
+        evt = GameEvent(Engine.mustangState.triggerPlayer,[])
+        Engine.mustangState.space.addEvent(evt)
+    

@@ -1,0 +1,44 @@
+<!--
+How it works (not going to make any XML template thing):
+item - a normal menu button
+	message (trigger-(onClick, onHover, etc.) type-("switch","system","loadlevel")
+		Put into menu.getEvents() when triggered; contents of the tag (optional) are the event.message attribute (None if not given.
+	
+special - one of the fancy custom things that are defined in the program (e.g. AchievementsPanel); not standardized yet
+
+The way everything is represented can change in future versions.
+-->
+
+<menuConfig>
+	<menu name="Mustang Cannon">
+		<item name="Start game">
+			<message trigger="onClick" type="switch">Select Stage</message>
+			<!--message trigger="onHover"-->
+		</item>
+		<item name="Achievements">
+			<message trigger="onClick" type="switch">Achievements</message>
+		</item>
+		<item name="Options">
+			<message trigger="onClick" type="switch">Options</message>
+		</item>
+		<item name="Exit">
+			<message trigger="onClick" type="system">QUIT</message>
+		</item>
+	</menu>
+	<menu name="Select Stage">
+		<item name="Front Rotunda">
+			<message trigger="onClick" type="loadlevel">Front Rotunda</message>
+		</item>
+	</menu>
+	<menu name="Achievements">
+		<item name="Back">
+			<message trigger="onClick" type="return"/> <!-- The menu handler should be keeping track of the previous menu(s) -->
+		</item>
+		<special type="AchievementsPanel" x="100" y="200" w="400"/>
+	</menu>
+	<menu name="Options">
+		<item name="Back to main menu">
+			<message trigger="onClick" type="switch">Mustang Cannon</message>
+		</item>
+	</menu>
+</menuConfig>

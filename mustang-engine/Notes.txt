@@ -1,0 +1,22 @@
+Some things to note:
+-Rendering is in order (No painters algorithm)
+    -this was chosen to save problems and also because
+     the game we're making is horizontal so order of drawing really
+     isn't very relevant
+    -Yes, this means we always add the background first because
+     we always want it to be draw first
+
+-The scene manager is in no way functional atm and is not culling at all
+ at the moment; yes this means if you add 1000 objects offscreen, I assume
+ it will begin to lag
+
+Some Todos:
+-throw physix into the engine (because right now, we're just cheating the floor)
+-Legitimize things, add in a sprite handler
+    -this is simply extending the render method implementation
+-add in an asset manager; this way we can easily track a loading bar if need be (y)
+-add in support for GUI (this is probably what you're looking for :D)
+
+-triple check all bind-related functions; strict pointer control is crucial
+
+-implement game states (for easy shifting between game controls, etc)

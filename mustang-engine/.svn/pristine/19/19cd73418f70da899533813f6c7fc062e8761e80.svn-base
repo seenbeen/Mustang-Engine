@@ -1,0 +1,23 @@
+# for Python 2 or Python 3
+#This will get the line count of all the *.end files, where end is given by user.
+
+import os
+import sys
+
+if sys.version_info[0] < 3:
+    input = raw_input
+
+extension = input("Gimme extension: ")
+total = 0
+
+cwd = os.getcwd()
+for root, dirs, files in os.walk(cwd):
+##    print(root, dirs, files, sep="\n")
+    for name in files:
+        if name.endswith("." + extension):
+            num = len(list(filter(lambda x:not (x.isspace() or x.strip().startswith("//")),(open(root+"\\"+name,"r").read().strip().split("\n"))))) # sorry about the filter
+            a = root[len(cwd):]+"\\"+name
+            print(a + " "*(max(0,75-len(a))) + str(num))
+            total += num
+print(str(total) + " lines in total.")
+input("Enter to exit...")

@@ -1,0 +1,62 @@
+[DEFAULT]
+# I think we'll just copy and paste these values into each ini file for now, but they will be hard-coded into the program later on
+
+# -1 for "never tile"
+# -2 for "appear exactly once at any time, never wrapping around" (i.e. guy disappears off one side before appearing on other)
+# -3 for "appear exactly once at any time, with wrapping around" (i.e. half on left, half on right)
+# otherwise, a non-neg. int for the separation in pixels between each of the sprite instances
+# note that 0 is for tiling without gaps (not "false")
+tile_x = -1
+tile_y = -1
+
+layer = 0
+# int from 0-9 inclusive.  0 = static, 9 = move at same speed as player
+
+# offsets for the first sprite (if x == 100 and tile_x >= 0, then still has a sprite covering 0<=x<100)
+# from center unless the flags are set differently
+x = 0
+y = 0
+
+rotation_speed = 0
+
+# alignment, as of right now, is one of CENTER, TOPLEFT
+alignment = CENTER
+
+# the sprite attribute is the name of a sprite in the sprites directory
+
+[MAIN]
+num_layers = 4
+
+[sun]
+sprite = sun
+x = 500
+y = 150
+layer = 0
+
+[sun2]
+sprite = random_flashing_sun
+x = 100
+y = 40
+layer = 1
+rotation_speed = 0.4
+
+[sun3]
+sprite = random_flashing_sun
+x = 0
+y = 110
+layer = 3
+tile_x = 10
+
+[sun_origin]
+sprite = sun
+x = 0
+y = 0
+layer = 0
+
+[mountains]
+sprite = blue_mountain
+tile_x = 0
+layer = 2
+x = 100
+y = -100
+alignment = TOPLEFT

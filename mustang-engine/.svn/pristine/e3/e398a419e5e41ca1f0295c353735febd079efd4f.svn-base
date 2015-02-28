@@ -1,0 +1,246 @@
+#-------------------------------------------------------------------------------
+# Name:        backgrounds
+# Purpose:     Handle loading, updating backgrounds for game levels
+#
+# Author:      Simon
+#
+# Created:     28/01/2014
+# Copyright:   (c) Simon 2014
+# Licence:     <your licence>
+#-------------------------------------------------------------------------------
+
+from configparser import ConfigParser
+from m_engine import Engine
+from m_engine import AssetManager
+from m_engine.gameobject import GameObject
+from m_engine.sprite import SpriteObject
+from m_engine.gamestate import AbstractGameState
+from m_engine.gamespace import GameSpace
+
+import pygame
+import os
+
+class Background(GameObject):
+    '''
+    Has a bunch of BackgroundSpriteObjects that, together, compose a scrolling
+    background.
+    Tiling to be implemented.
+    '''
+    _sprIdCounter = 0
+    _sprLookup = {}
+
+    def __init__(self, numLayers=4):
+        super().__init__()
+        self.numLayers = numLayers
+        self._objs = [[] for i in range(self.numLayers)]
+
+    @staticmethod
+    def loadBackgroundFromFile(fileObj):
+        '''
+        Given a file-like object (in .ini format), parses the contents of the
+        file and returns a new Background instance.
+        '''
+        cp = ConfigParser()
+        cp.read_file(fileObj)
+        numLayers = cp.getint("MAIN", "num_layers")
+        bkg = Background(numLayers)
+        for s in cp.sections():
+            if s in ("MAIN",):
+                continue
+            sprName = cp.get(s, "sprite")
+            sprData = AssetManager.getSpriteData(sprName)
+            tX, tY = cp.getint(s, "tile_x"), cp.getint(s, "tile_y")
+            layer = cp.getint(s, "layer")
+            offX, offY = cp.getint(s, "x"), cp.getint(s, "y")
+            rotSpeed = cp.getfloat(s, "rotation_speed")
+            alignment = cp.get(s, "alignment")
+            bkg.addSprite(sprData, layer, tX, tY, offX, offY, rotSpeed, alignment)
+        return bkg
+
+    def getDistanceFactor(self, layerNum, numLayers=0):
+        '''
+        layerNum is an int
+        If nLayers is not given (or nLayers == 0) then will use this
+        background's numLayers attribute.
+        Returns a multiplier (float) N (0 <= N <= 1) that helps decide the
+        amount of scrolling for each layer, to implement parallax.  If one
+        layer, returns 0.
+        '''
+        if numLayers < 0:
+            raise ValueError("numLayers must be a non-negative integer value.")
+        if numLayers == 0:
+            numLayers = self.numLayers
+        if not 0 <= layerNum < numLayers:
+            raise ValueError("layerNum must be between 0 and numLayers-1 inclusive")
+        if numLayers == 1:
+            return 0
+        return (layerNum/(numLayers-1))**3 # note 0<=layerNum/(numLayers-1)<=1
+
+    def addSprite(self, sprData, layer, tileX, tileY, offX, offY, rotSpeed, alignment):
+        '''
+        Adds something to the background (e.g. a sun or tiled mountains).
+
+        spr is loaded as data from AssetManager.getSpriteData
+        layer is an int from 0-numLayers-1 inclusive.  0 is static, numLayers-1
+        is fastest-moving.
+        tileX, tileY are ints.  If tileX and/or tileY >= 0, represents distance
+        between each tiled instance of spr.  If -1, never tiled.  If -2, appears
+        exactly one time at any point on screen, with guy disappearing from one
+        side of screen before reappearing on other.  If -3 then like -2 but can
+        be half on left, half on right.
+        offX, offY are the topleft of the first sprite (think of tiling).
+        alignment is a str
+
+        Returns a unique ID int for the sprite thing added (which can be used
+        with removeSprite)
+        '''
+        if not 0 <= layer <= self.numLayers:
+            raise ValueError("layer must be from 0-{} inclusive".format(self.numLayers)-1)
+        spr = BackgroundSpriteObject(sprData, layer, tileX, tileY, offX, offY, rotSpeed, alignment)
+        self._objs[layer].append(spr)
+
+        id = type(self)._sprIdCounter
+        type(self)._sprLookup[id] = spr
+        type(self)._sprIdCounter += 1
+        return id
+
+    def removeSprite(self, id):
+        '''
+        id is the int returned by addSprite
+        '''
+        try:
+            s = type(self)._sprLookup[id]
+            del type(self)._sprLookup[id]
+            self._objs.remove(s)
+        except (KeyError, ValueError):
+            raise KeyError("Id {} not found".format(id))
+
+    def render(self, surf, x, y):
+        '''
+        Draw the background with all its glory.
+        x,y are the distances in pixels to the right and bottom respectively
+        to displace the background.
+        Scrolling with parallax implemented.
+        To be implemented: -2 and -3 flags
+        '''
+        N = self.numLayers
+        sW, sH = surf.get_size()
+        for ind, sprs in enumerate(self._objs):
+            for spr in sprs: # BackgroundSpriteObject instances
+                x1 = int(spr.offX + x * self.getDistanceFactor(ind)) + sW//2
+                y1 = int(spr.offY + y * self.getDistanceFactor(ind)) + sH//2
+                # Math is tough; just use four generators.
+                w,h = spr.getSize()
+                xSpacing = w + spr.tileX
+                ySpacing = h + spr.tileY
+
+                # Find x-coords
+                if spr.tileX >= 0:
+                    xCoords = range((x1%xSpacing)-xSpacing, sW+xSpacing+1, xSpacing)
+                elif spr.tileX == -1:
+                    xCoords = [x1]
+                elif spr.tileX == -2: # not implemented yet
+                    xCoords = [x1]
+                elif spr.tileX == -3: # not implemented yet
+                    xCoords = [x1]
+                else:
+                    raise ValueError("tileX must be greater than or equal to -3")
+
+                # Find y-coords
+                if spr.tileY >= 0:
+                    yCoords = range((y1%ySpacing)-ySpacing, sH+ySpacing+1, ySpacing)
+                elif spr.tileY == -1:
+                    yCoords = [y1]
+                elif spr.tileY == -2: # not implemented yet
+                    yCoords = [y1]
+                elif spr.tileY == -3: # not implemented yet
+                    yCoords = [y1]
+                else:
+                    raise ValueError("tileY must be greater than or equal to -3")
+
+                for x2 in xCoords:
+                    for y2 in yCoords:
+                        spr.render(surf, x2, y2)
+
+    def update(self):
+        ''' Updates all of the BackgroundSpriteObjects in this Background '''
+        super().update()
+        for i in self._objs:
+            for j in i:
+                j._update()
+
+class BackgroundSpriteObject(SpriteObject):
+    ''' internal use '''
+    def __init__(self, sprData, layer, tileX, tileY, offX, offY, rotSpeed, alignment="CENTER"):
+        super().__init__(sprData)
+        self.sprData = sprData
+        self.layer, self.tileX, self.tileY = layer, tileX, tileY
+        self.offX, self.offY = offX, offY
+        self.rotSpeed = rotSpeed
+        self.alignment = alignment
+
+    def update(self):
+        # if it goes my way I'd like first like to be:
+        # super().update()
+        self.setRotation(self.rotation+self.rotSpeed)
+
+    def render(self, surf, x, y):
+        if self.alignment == "CENTER":
+            super().render(surf, x, y)
+        else:
+            ox, oy = self.sprite.getOffset()
+            if self.alignment == "TOPLEFT":
+                super().render(surf, x+ox, y+oy)
+
+    def getSize(self):
+        a = self.sprite.imgDims
+        return map(int,(a["x"]*2,a["y"]*2))
+
+# TEMPORARY STUFF
+class BkgState(AbstractGameState):
+    ''' Temporary; for the unit test only. '''
+    def __init__(self):
+        super().__init__()
+        with open("Assets/Backgrounds/sunny_day.ini") as f:
+            self.bkg = Background.loadBackgroundFromFile(f)
+
+        self.coolSpace = GameSpace()
+        self.coolSpace.addObject(self.bkg)
+        self.coolRocketGuy = SpriteObject(AssetManager.getSpriteData("TestSprite"))
+        self.coolRocketGuy.currentSprite = "Moving"
+        self.coolSpace.addObject(self.coolRocketGuy)
+        self.scrollDistance = [0,0]
+
+    def update(self):
+        Engine.screen.fill((0,0,0))
+        self.coolSpace.update()
+
+        self.bkg.render(Engine.screen, *self.scrollDistance)
+        self.coolRocketGuy.render(Engine.screen, 400, 300)
+        Engine.setTitle("Backgrounds unit test " + str(self.scrollDistance)+
+                        " use WASD to move rocket, SPACE to go faster" +
+                        str(int(Engine.getFPS())) + " fps")
+
+        k = pygame.key.get_pressed()
+        a = self.scrollDistance
+        s = 40 if k[pygame.K_SPACE] else 10
+        if k[pygame.K_w]:
+            a[1] -= s
+        if k[pygame.K_s]:
+            a[1] += s
+        if k[pygame.K_a]:
+            a[0] -= s
+        if k[pygame.K_d]:
+            a[0] += s
+
+
+def unitTest():
+    Engine.init()
+    AssetManager.init("Assets/assetConfig.ini")
+    Engine.setTitle("Backgrounds unit test")
+    Engine.state = "testbkg"
+    Engine.addState(BkgState(), "testbkg")
+    Engine.run()
+
+if __name__ == "__main__":
+    unitTest()
